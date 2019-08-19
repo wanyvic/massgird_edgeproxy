@@ -33,7 +33,6 @@ type MinerOption struct {
 	MinerWoker   string `worker`
 	MinerPool1   string `eth.f2pool.com:6688`
 	MinerPool2   string `eth.f2pool.com:8008`
-	MinerEmail   string
 }
 
 func getPathOption(cli *client.Client) error { //get docker info
@@ -54,9 +53,8 @@ func getPathOption(cli *client.Client) error { //get docker info
 			MinerConfig.MinerPool1 = label[strings.Index(label, "=")+1:]
 		case strings.Contains(label, "MINER_POOL2"):
 			MinerConfig.MinerPool2 = label[strings.Index(label, "=")+1:]
-		case strings.Contains(label, "MINER_EMAIL"):
-			MinerConfig.MinerEmail = label[strings.Index(label, "=")+1:]
 		}
+
 	}
 	log.Println("MinerConfig: ", MinerConfig)
 	return nil
@@ -69,7 +67,6 @@ func getMinerEnv(MinerConfig MinerOption, DefaultEnv string) []string {
 	MinerEnv = append(MinerEnv, "MINER_WORKER="+MinerConfig.MinerWoker)
 	MinerEnv = append(MinerEnv, "MINER_POOL="+MinerConfig.MinerPool1)
 	MinerEnv = append(MinerEnv, "MINER_POOL2="+MinerConfig.MinerPool2)
-	MinerEnv = append(MinerEnv, "MINER_EMAIL="+MinerConfig.MinerEmail)
 	return MinerEnv
 }
 func eventLoop(cli *client.Client) error {
@@ -223,4 +220,3 @@ func main() {
 		panic(err)
 	}
 }
-

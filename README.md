@@ -1,1 +1,1 @@
-# massgird_edgeproxy
+# mgproxy
