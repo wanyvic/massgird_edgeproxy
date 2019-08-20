@@ -198,7 +198,7 @@ func stopMiner(cli *client.Client) error {
 }
 func isEdgeWorkCotainer(container types.Container) (string, bool) {
 	for key, value := range container.Labels {
-		if strings.Contains(key, ImageKeyFlag) && value == "massgrid edge work" {
+		if strings.Contains(key, "com.massgrid.type") && value == "worker" {
 			return container.ID, true
 		}
 	}
