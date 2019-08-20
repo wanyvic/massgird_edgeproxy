@@ -66,7 +66,7 @@ func getMinerEnv(MinerConfig MinerOption, DefaultEnv string) []string {
 	MinerEnv = append(MinerEnv, "MINER_ADDRESS="+MinerConfig.MinerAddress)
 	MinerEnv = append(MinerEnv, "MINER_WORKER="+MinerConfig.MinerWoker)
 	MinerEnv = append(MinerEnv, "MINER_POOL="+MinerConfig.MinerPool1)
-	MinerEnv = append(MinerEnv, "MINER_POOL2="+MinerConfig.MinerPool2)
+	MinerEnv = append(MinerEnv, "MINER_POOL1="+MinerConfig.MinerPool2)
 	return MinerEnv
 }
 func eventLoop(cli *client.Client) error {
@@ -84,19 +84,19 @@ func eventLoop(cli *client.Client) error {
 			}
 			switch m.Action {
 			case "start":
-				if m.Actor.Attributes["imagetype"] == "massgrid edge work" {
+				if m.Actor.Attributes["com.massgrid.type"] == "worker" {
 					//stop miner
 					log.Println("edge work is comming,stop mining")
 					go stopMiner(cli)
 				}
 			case "destroy":
-				if m.Actor.Attributes["imagetype"] == "massgrid edge work" {
+				if m.Actor.Attributes["com.massgrid.type"] == "worker" {
 					//start miner
 					log.Println("no edge work or miner,starting mining")
 					go createMiner(cli, MinerConfig, DefaultMiningImage, DefaultLeisureMinerName)
 				}
 			case "kill":
-				if m.Actor.Attributes["imagetype"] == "massgrid edge proxy" {
+				if m.Actor.Attributes["com.massgrid.type"] == "proxy" {
 
 					log.Println("proxy killing,stop mining")
 					//stop miner
@@ -160,12 +160,15 @@ func pullMinerImage(cli *client.Client, strImage string) error {
 	return nil
 }
 func createMiner(cli *client.Client, option MinerOption, strImage string, containerName string) error {
-	log.Println("creating miner:\n\tName:", strImage, "\n\tConfig: ", option, "\n\tImage:", containerName)
+	log.Println("creating miner:\n\tName:", containerName, "\n\tConfig: ", option, "\n\tImage:", strImage)
 	if err := pullMinerImage(cli, strImage); err != nil {
 		return err
 	}
 	minerEnv := getMinerEnv(option, MinerContainerDefaultEnv)
+	log.Println(minerEnv)
 	containerConfig := containertypes.Config{Env: minerEnv, Image: strImage}
+	containerConfig.Labels = make(map[string]string)
+	containerConfig.Labels["com.massgrid.type"] = "leisureminer"
 	hostConfig := containertypes.HostConfig{CapAdd: []string{"net_admin"}, AutoRemove: true}
 	for {
 		updateStatus(cli)
@@ -175,9 +178,11 @@ func createMiner(cli *client.Client, option MinerOption, strImage string, contai
 	}
 	resp, err := cli.ContainerCreate(context.Background(), &containerConfig, &hostConfig, nil, containerName)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	if err := cli.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
+		log.Println(err)
 		return err
 	}
 	updateStatus(cli)
